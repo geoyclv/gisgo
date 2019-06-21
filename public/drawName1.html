@@ -210,50 +210,48 @@
                     var cxt=canvasid.getContext("2d");  
                     canvasid.height=canvasid.height;  
                 }
-				
-                //提取数字，并存入数组
+
+				//提取数字，并存入数组
                 function getPoint(DATA,NUMBER){
-                    var heap=DATA.replace(/[^0-9.dD]/ig,"A");		
-                    var numcharacter="";      //存储数字字符                    
-                    var i=0;
-                    var flag=1;               //跳过第一位编号
-                    var n=0;                  //标识数字与字符转换位置
-                    var character=heap[flag]; //获取字符串的第二个字符
-					var numline=0;            //标记线段数，用于处理如何根据线段ID跳过线段ID处理后面有意义的数字
-					var isend=0;
-					
-                    while(character!=null){
-                        if(character=="d"||character=="D"){
-                            isend=1;
-							numline++;
-							NUMBER[i++]=-1; 
-                        }
-						if(numline<10 && isend){
-						    flag+=5; 
-						    character=heap[flag];
-						    isend=0;
+                    var str=DATA;
+					var numcharacter="";
+					var i=0;
+					var flag=0;
+					var character=str[flag];
+					while(character!=null) {
+						if(character=="E") {
+							flag+=5;
+							character=str[flag];
 						}
-						if(9<numline<100 && isend){
-						    flag+=6;
-							character=heap[flag];
-							isend=0;
-						}
-                        if(character!="A"){
-                            n=1;
-                            numcharacter+=character;
-                        }
-                        else{
-                            if(n){
-                                NUMBER[i++]=parseFloat(numcharacter); //将字符转换为浮点数
-                                numcharacter="";
-                                n=0;
-                            }
-                        }
-                        character=heap[++flag];
-                    }					
+                        else {
+							while(character!="\n") {
+								character=str[++flag];
+							} //while2
+							character=str[++flag];
+							while(character!="E") {
+								while(character!=",") {
+									numcharacter+=character;
+									character=str[++flag];
+								} //while4
+								character=str[++flag];
+								NUMBER[i++]=parseFloat(numcharacter);
+								numcharacter="";
+								while(character!="\n") {
+									numcharacter+=character;
+									character=str[++flag];
+								} //while5
+								character=str[++flag];
+								NUMBER[i++]=parseFloat(numcharacter);
+								numcharacter="";
+                            } //while3
+                            NUMBER[i++]=-1;
+							flag+=5;
+							character=str[flag];
+						} //else
+					} //while1			
                     return NUMBER;	
                 }
-			   
+
                 function drawName(NUMBER,canvasid,changeX,changeY){
                     var cxt=canvasid.getContext('2d'); 
 					var n=NUMBER.length;
