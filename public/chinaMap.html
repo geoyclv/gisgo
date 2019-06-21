@@ -74,6 +74,8 @@
             </header>
             <main>
                 <div class="menuCont">
+                    <input type="file" style="visibility:hidden; position: relative; width: 0;" id="fileChina" onchange="newPoints();getPoints();">
+                    <button class="buttons" onclick="fileChina.click()">加载文件</button>
                     <button class="buttons" onclick="clearCanvas();drawGCS(locationPoints,getRandomColor(),1.5);drawGCS(coordPoints,'gray',1)">54坐标系</button>
                     <button class="buttons" onclick="clearCanvas();drawMercator(locationPoints,getRandomColor(),1.5);drawMercator(coordPoints,'gray',1)">墨卡托投影</button>
                     <button class="buttons" onclick="clearCanvas();drawLambert(locationPoints,getRandomColor(),1.5);drawLambert(coordPoints,'gray',1)">兰伯特投影</button>
@@ -123,13 +125,11 @@
 			    }
 				
                 //中国地图54坐标系
-                var requestURL='./data/CHINA_Arc.txt';
-                var request=new XMLHttpRequest();
-	            request.open('GET', requestURL);
-	            request.responseType='text';
-                request.send();
-				request.onload=function(e) {
-					var str=request.response;
+                var file=document.getElementById("fileChina").files[0];
+                var reader=new FileReader();
+	            reader.readAsText(file);
+				reader.onload=function(e) {
+					var str=reader.result;
 					var numcharacter="";
 					var i=0;
 					var flag=0;

@@ -2,7 +2,7 @@
 <html>  
     <head>
         <meta charset="utf-8">
-		<title>空间数据编码</title>
+		<title>平面坐标变换</title>
 		<style>
 			body {
 				width: 1000px;
@@ -89,7 +89,7 @@
     </head>
     <body onload="drawGrid(myCanvas); drawGrid(myCanvas2);">
         <header>
-		    <h2>空间数据编码</h2>
+		    <h2>平面坐标变换</h2>
         </header>			
         <main>
             <div class="navCont">
@@ -119,19 +119,20 @@
 			</div>
 			
 			<div class="changeALLCont">
-				<button id="getAlllData" onclick="newData1(); newData2();">加载所有数据</button>
 				<button id="renewAllCanvas" onclick="main(myCanvas,number,cX,cY);main(myCanvas2,number2,cX2,cY2)">刷新所有画布</button>
 				<button id="deleteAllCanvas" onclick="clearCanvas(myCanvas);clearCanvas(myCanvas2)">清空所有画布</button>
 			</div>
 
 			<div class="changeSimCont">
 			<div id="d1">
-				<button type="button" onclick="newData1();">加载数据1</button>
+				<input id="fileInput" type="file" style="visibility: hidden; position: relative; width: 0;" onchange="newData1(fileInput);">
+				<button type="button" onclick="fileInput.click();">加载数据1</button>
 				<button type="button" onclick="main(myCanvas,number,cX,cY);">刷新画布1</button>
 				<button type="button" onclick="clearCanvas(myCanvas);">清空画布1</button>
 			</div>
 			<div id="d2">
-				<button type="button" onclick="newData2();">加载数据2</button>
+				<input id="fileInput2" type="file" style="visibility: hidden; position: relative; width: 0;" onchange="newData2(fileInput2);">
+				<button type="button" onclick="fileInput2.click();">加载数据2</button>
 				<button type="button" onclick="main(myCanvas2,number2,cX2,cY2);">刷新画布2</button>
 				<button type="button" onclick="clearCanvas(myCanvas2);">清空画布2</button>
 			</div>
@@ -142,34 +143,30 @@
 			    <canvas id="myCanvas2" width="480" height="480" style="border:1px solid black"  >your browser does not support the canvas tag </canvas>
 			</div>
 			<script>
-			    function newData1(){
+			    function newData1(fileId){
 				   //画布一对应文件全局变量
 			       cX=new Array();
                    cY=new Array();
 				   number=new Array();
-				   URL1='./data/元1.txt';
 				   data1=null;
-				   getData(URL1,data1,number);
+				   getData(fileId,data1,number);
 				}
 				
-			    function newData2(){
+			    function newData2(fileId){
 				   //画布二对应文件全局变量
 				   cX2=new Array(); 
                    cY2=new Array(); 
 				   number2=new Array();
-				   URL2='./data/策1.txt';
 				   data2=null;
-				   getData(URL2,data2,number2);
+				   getData(fileId,data2,number2);
 				}
 
-				function getData(URL,DATA,NUMBER){
-					var requestURL=URL;
-					var request=new XMLHttpRequest();
-					request.open('GET',requestURL);
-					request.responseType='text';
-					request.send();
-					request.onload=function() {
-						DATA=request.response;
+				function getData(fileId,DATA,NUMBER){
+					var file=fileId.files[0];
+					var reader=new FileReader();
+					reader.readAsText(file);
+					reader.onload=function(e) {
+						DATA=reader.result;
 						getPoint(DATA,NUMBER);
 					}
 				}
@@ -210,8 +207,8 @@
                     var cxt=canvasid.getContext("2d");  
                     canvasid.height=canvasid.height;  
                 }
-
-				//提取数字，并存入数组
+				
+                //提取数字，并存入数组
                 function getPoint(DATA,NUMBER){
                     var str=DATA;
 					var numcharacter="";
@@ -251,7 +248,7 @@
 					} //while1			
                     return NUMBER;	
                 }
-
+			   
                 function drawName(NUMBER,canvasid,changeX,changeY){
                     var cxt=canvasid.getContext('2d'); 
 					var n=NUMBER.length;

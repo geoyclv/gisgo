@@ -74,8 +74,11 @@
             </header>
             <main>
                 <div class="menuCont">
+                    <input type="file" style="visibility: hidden; position: relative; width: 0;" id="fileWorld" onchange="newPoints();getPoints();newgreatCTPoints(2.2,48.52,116.4,39.8)">
+                    <button class="buttons" onclick="fileWorld.click()">加载文件</button>
                     <button class="buttons" onclick="initCanvas(worldMap);drawGCS(locationPoints,getRandomColor(),1.5);drawGCS(coordPoints,'gray',1);drawGCS(greatCTPoints,'red','1')"">WGS84坐标系</button>
                     <button class="buttons" onclick="initCanvas(worldMap);drawMercator(locationPoints,getRandomColor(),1.5);drawMercator(coordPoints,'gray',1);drawMercator(greatCTPoints,'red','1')">墨卡托投影</button>
+                    <button class="buttons" onclick="initCanvas(worldMap);drawLambert(locationPoints,getRandomColor(),1.5);drawLambert(coordPoints,'gray',1);drawLambert(greatCTPoints,'red','1')">兰伯特投影</button>
                 </div>
                 <div class="mapCont">
                     <canvas id="worldMap" width="800" height="520" style="border: 1px solid black">你的浏览器不支持html5画布，请使用现代浏览器</canvas>
@@ -169,13 +172,11 @@
 			    }
 				
 				//世界国家WGS-84坐标
-                var requestURL='./data/country.txt';
-                var request=new XMLHttpRequest();
-	            request.open('GET', requestURL);
-	            request.responseType='text';
-                request.send();
-				request.onload=function(e) {
-					var str=request.response;
+                var file=document.getElementById("fileWorld").files[0];
+                var reader=new FileReader();
+	            reader.readAsText(file);
+				reader.onload=function(e) {
+					var str=reader.result;
 					var numcharacter="";
 					var i=0;
 					var flag=0;
@@ -270,5 +271,50 @@
                     }
                 }
             }
+
+            function drawLambert(points,lcolor,lwidth) {
+                var x=new Array();
+                var y=new Array();
+                var N=points.length;
+				cxt.strokeStyle=lcolor;
+				cxt.lineWidth=lwidth;
+
+                var B1=20*Math.PI/180;  //第一标准纬线
+				var B2=40*Math.PI/180;  //第二标准纬线
+				var L0=0*Math.PI/180;   //投影原点经度
+				var B0=0*Math.PI/180;   //投影原点纬度
+				var mB1=Math.cos(B1)/(Math.sqrt(1-Math.pow(e,2)*Math.pow(Math.sin(B1),2)));
+				var mB2=Math.cos(B2)/(Math.sqrt(1-Math.pow(e,2)*Math.pow(Math.sin(B2),2)));
+				var tB0=Math.tan((Math.PI-2*B0)/4)/Math.pow((1-e*Math.sin(B0)/(1+e*Math.sin(B0))),(e/2));
+				var tB1=Math.tan((Math.PI-2*B1)/4)/Math.pow((1-e*Math.sin(B1)/(1+e*Math.sin(B1))),(e/2));
+				var tB2=Math.tan((Math.PI-2*B2)/4)/Math.pow((1-e*Math.sin(B2)/(1+e*Math.sin(B2))),(e/2));
+				var n=Math.log(mB1/mB2)/Math.log(tB1/tB2);
+				var F=mB1/(n*Math.pow(tB1,n));
+				var r0=a*F*Math.pow(tB0,n);
+               
+                for(var i=0,j=0;i<N;i++) {
+                    if(points[i]!=999) {
+                        var L=points[i]*Math.PI/180;
+                        var B=points[++i]*Math.PI/180;
+                        var t=Math.tan((Math.PI-2*B)/4)/Math.pow((1-e*Math.sin(B)/(1+e*Math.sin(B))),(e/2));
+						var r=a*F*Math.pow(t,n);
+						var angle=n*(L-L0);
+			          
+                        x[j]=r*Math.sin(angle)*0.00009/9;
+                        y[j]=(r0-r*Math.cos(angle))*0.00009/9+115;
+                        j++;
+                    }
+                    else {
+                        cxt.beginPath();
+                        cxt.moveTo(x[0],y[0]);
+                        for(var k=1;k<j;k++) {
+                            cxt.lineTo(x[k],y[k]);
+                        }
+                        cxt.stroke();
+                        j=0;
+                    }
+                }
+            }
+            
         </script>
 </html>

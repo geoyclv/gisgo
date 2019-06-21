@@ -106,7 +106,8 @@
             <main>
                 <div class="menuCont">
                     <div>
-                        <button onclick="newPoints();getMercatorPoints();">加载数据</button>
+                        <input type="file" style="visibility: hidden; position: absolute; width: 0; " id="fileJiangsu" onchange="newPoints();getMercatorPoints(fileJiangsu);">
+                        <button onclick="fileJiangsu.click()">加载数据</button>
                     </div>
                     <div class="d1">
                         <button class="canvas1Button" onclick="draw(canvas1,MercatorPoints)">墨卡托投影</button>
@@ -172,14 +173,12 @@
                     lastGCSPointsArea=new Array();     //存储最终地理坐标系下每个城市的面积
                 }
                 
-                function getMercatorPoints() {
-                    var requestURL = './data/Area_polygon.txt';
-                    var request = new XMLHttpRequest();
-                    request.open('GET',requestURL);
-                    request.responseType = 'text';
-                    request.send();
-                    request.onload = function(e) {
-                        var str=request.response;  //this.result
+                function getMercatorPoints(fileId) {
+                    var file=fileId.files[0];
+                    var reader=new FileReader();
+                    reader.readAsText(file);
+                    reader.onload=function(e) {
+                        var str=reader.result;  //this.result
                         var numcharacter="";
                         var j=0;
                         var i=0;
@@ -226,7 +225,7 @@
                     //getMercatorPoints(fileJiangsu);
                     //该语句解决从右到左点击功能按钮时画布1计算显示面积不能跑的BUG
                     //经过断点调试发现调用此函数时，并没有重新提取字符到MercatorPoints数组中
-                    getMercatorPoints();
+                    getMercatorPoints(fileJiangsu);
                     if(GCSPoints.length==0) {
                        var N=MercatorPoints.length;
                        var x=new Array();
