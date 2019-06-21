@@ -1,0 +1,161 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>最佳工作序列</title>
+        <style>
+            body {
+                width: 1000px;
+                margin: 0 auto;
+                position: relative;
+                border-left: 3px solid black;
+                border-right: 3px solid black;
+                top: 10px;
+            }
+            header,footer {
+                background-color: #6991c7;
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+            }
+            header {
+                height: 50px;
+            }
+            main {
+                position: relative;
+                background-color: #bac8e0;
+            }
+            footer {
+                height: 40px;
+            }
+            h2,h3 {
+                line-height: 1;
+                /*margin: 10px;*/
+                /*什么时候用外边距什么时候用内边距？根据是否需要设置盒子背景颜色来看*/
+                /*每一个盒子都有margin和padding，但有的盒子不能设置左右值*/
+                padding: 10px;
+                margin: 0 auto;
+                font-family: '楷体';
+                text-align: center;
+            }
+            h2 {
+                font-size: 30px;
+            }
+            h3 {
+                font-size: 20px;
+            }
+            p {
+                padding: 16px;
+                margin: 0 auto;
+            }
+            .navCont, #resultCont{
+                padding: 16px;
+                text-align: center;
+                margin: 0 auto;
+            }
+            .navCont h3 {
+                display: inline;
+                line-height: 1;
+                margin: 0 auto;
+                font-family: '仿宋';
+                font-weight: bold;
+                text-align: center;
+            }
+            .navCont input {
+                width: 50px;
+                height: 20px;
+                font-size: 18px;
+            }
+            .navCont button {
+                display: inline;
+                line-height: 1.5;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 20px;
+                text-align: center;
+                border: 1px solid black;
+                margin: 0 auto;
+            }
+            .navCont button:hover {
+                color: white;
+                background-color: rgba(0,0,0,0.5);
+            }
+            table {
+                border-collapse: collapse;
+                border: 2px solid black;
+                margin: 0 auto;
+            }
+            td, th {
+                border: 1px solid gray;
+                padding: 10px 20px;
+            }
+            th {
+                background-color: rgb(235,235,235);
+            }
+            td {
+                text-align: center;
+            }
+            caption {
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h2>最佳工作序列</h2>
+        </header>
+        <main>
+            <div class="navCont">
+                <h3>问题描述</h3>
+                <p>有N件工作，输入每件工作的费时、最后完成的期限及工作的价值，试求可能的一个完成工作序列，使价值和最大。</p>
+                <button type="button" class="button" onclick="getData();">加载数据</button>
+                <button type="button" class="button" onclick="result();">计算显示</button>
+            </div>
+            <div id="resultCont">
+                <!--<table id="table1" align="center"></table>-->
+                <!--<p id="p1"></p>-->
+            </div>
+        </main>
+        <footer>
+            <h3>10170312</h3>
+        </footer>
+        <script>
+            window.onload = getData();
+            //let fTable = document.getElementById("table1");
+            let resultCont = document.getElementById("resultCont");
+            let workList, //保存从json里面解析的测试数据对象，每个测试数据有四个数组，分别为workID costTime deadLine value
+                dataName; //数据描述
+            function getData() {
+                let requestURL = './data/worklist4.json';
+                let request = new XMLHttpRequest();
+                request.open('GET',requestURL);
+                request.responseType = 'json';
+                request.send();
+                request.onload = function(e) {
+                    workList = request.response['workList'];
+                    dataName = request.response['dataName'];
+                    for(let i = 0; i < workList.length; i++) {
+                        let fTable = document.createElement('table');
+                        resultCont.appendChild(fTable);
+                        let fCaption = document.createElement('caption');
+                        fCaption.textContent = dataName + (i + 1);
+                        fTable.appendChild(fCaption);
+                        for(let j in workList[i]) {
+                            let fTr = document.createElement('tr');
+                            fTable.appendChild(fTr);
+                            let fTh = document.createElement('th');
+                            fTh.textContent = j;
+                            fTr.appendChild(fTh);
+                            for(let k = 0; k < workList[i].workID.length; k++) {
+                                let fTd = document.createElement('td');
+                                fTd.textContent = workList[i][j][k];
+                                fTr.appendChild(fTd);
+                            }
+                        }
+                    }
+                }
+            }
+        </script>
+    </body>
+</html>

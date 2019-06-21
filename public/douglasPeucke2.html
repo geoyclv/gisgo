@@ -1,0 +1,440 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+		<!--本次作业在学习了10170313的递归程序后基于json数据重写.
+			其中的json数据经过.gen->shp->json转换后得到。
+			我的工作：
+			1.解析json数据，用解析的数据实例化对象;
+			2.对象中增加了是否是闭环的属性isClose;
+			3.Point类中增添DEL属性用于标记是否删除该点，简化后续程序逻辑;
+			4.开始运算时就做好了数据处理，如确定对象是否是闭环，Point类默认属性为false;
+			5.分离简化进入递归前的以及递归处理后的处理，使代码更利于阅读；
+			6.修改了递归程序中的小BUG; 修改后极限压缩率应该是6.14%。
+			7.美化程序界面布局;
+			8.如需使用别的数据测试本程序请使用参照本程序所使用的json数据的格式;
+		    9.Github项目文件下的data目录有老北区的json测试数据。。。-->
+        <meta charset="utf-8">
+        <title>道格拉斯-普克法压缩矢量数据</title>
+        <style>
+            body {
+                width: 1000px;
+                margin: 0 auto;
+                position: relative;
+                border-left: 3px solid black;
+                border-right: 3px solid black;
+            }
+            header,footer {
+                background-color: #6991c7;
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+            }
+            header {
+                height: 50px;
+            }
+            main {
+                background-color: #bac8e0;
+            }
+            footer {
+                height: 40px;
+				clear: both;
+            }
+            h2,h3 {
+                line-height: 1;
+                margin: 10px 0 10px 0;
+                font-family: '楷体';
+                text-align: center;
+            }
+            h2 {
+                font-size: 30px;
+            }
+            h3 {
+                font-size: 20px;
+            }
+			#navCont {
+				padding: 16px;
+                margin: 0px auto;
+                text-align: center;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 18px;
+            }
+            #navCont .radios {
+				background-color: white;
+			}
+			#navCont p {
+                display: inline;
+            }
+            #navCont button {
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 18px;
+            }
+			#navCont .inputbox {
+                width: 75px;
+                height: 21px;
+                font-size: 18px;
+            }
+            #mapCont {
+                margin: 0 auto;
+				padding: 0 16px 54px 16px;
+            }
+			#mapCont canvas {
+				display: block;
+                margin: 0 auto;
+				padding: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h2>道格拉斯-普克法压缩矢量数据</h2>
+        </header>
+        <main>
+            <div id="navCont">
+                <button type="button" onclick="getData();">加载数据</button>
+                <p>临界值：</p>
+                <input id="maxdis" type="text" value="1027" class="inputbox" onchange="setTolerance(this.value)">
+                <button type="button" name="radios" onclick="getAfterPolygons()">开始压缩</button>
+                <p>压缩率：</p>
+                <input id="compression" type="text" value="" class="inputbox">
+                <p>显示地图：</p>
+                <input type="radio" class="radios" name="radios" value="before" checked="checked" onclick="setValue(this.value)">压缩前
+                <input type="radio" class="radios" name="radios" value="after" onclick="setValue(this.value)">压缩后
+            </div>
+            <div id="mapCont">
+                <canvas id="map" width="840" height="500" style="border: 1px solid black;"></canvas>
+            </div>
+        </main>
+        <footer>
+            <h3>10170312</h3>
+		</footer>
+		<script>
+			let hasData = false; //标记是否加载完成数据。避免重复加载
+			let isDraw = false; //标记是否已经绘制过地图，避免重复绘制
+			let change = "before"; //压缩前后标识
+			let lastTolerance = 0; //暂存上一次的阈值
+			let tolerance = document.getElementById('maxdis').value; //临界值
+			let canvas = document.getElementById('map');
+			let context = canvas.getContext('2d');
+			let polygonsBefore = new Array(); //该数组存储压缩前的对象，这些对象不确定是否是闭合的，只有实例化后执行judeClose方法才能标记
+			let polygonsAfter = new Array(); //该数组存储压缩后的非闭合对象和闭合普通多变形对象
+
+			//多边形构造函数
+			function Polygon(ID, POINTS) {
+				this.isClose = false;
+				this.ID = ID;
+				this.POINTS = POINTS;
+			}
+			//判断对象是否是闭合的
+			Polygon.prototype.judeClose = function() {
+				if((this.POINTS[0].X === this.POINTS[this.POINTS.length-1].X) && (this.POINTS[0].Y === this.POINTS[this.POINTS.length-1].Y)) {
+					this.isClose = true;
+				}
+			};
+			//地图点构造函数
+			function Point(X, Y) {
+				this.DEL = false;
+				this.X = X;
+				this.Y = Y;
+			};
+			//获取数据并绘制地图
+			function getData() {
+				if(hasData == true) {
+					return 0;
+				}
+				let POINTS;
+				let polygon;
+				let features;
+				let id;      //对应.gen文件中的id
+			    let points;  //对应.gen文件中每个id的坐标数组
+				let POINTSTEMP = new Array();
+                let requestURL = './data/Base_Road.json';
+                let request = new XMLHttpRequest();
+                request.open('GET',requestURL);
+                request.responseType = 'json';
+                request.send();
+                request.onload = function(e) {
+					features = request.response['features'];
+					for(let i = 0; i < features.length; i++) {
+						id = features[i]['attributes']['FID'] + 1;
+						points = features[i]['geometry']['paths'][0];
+						if(points === undefined) { //跳过空数据
+							continue;
+						}
+						for(let j = 0; j < points.length; j++) {
+							let point = new Point(points[j][0],points[j][1]);
+							POINTSTEMP.push(point);
+						}
+						POINTS = POINTSTEMP.slice();
+						polygon = new Polygon(id,POINTS);
+						polygon.judeClose(); //判断实例化的对象是否是闭合的
+						polygonsBefore.push(polygon);
+						POINTSTEMP.splice(0, POINTSTEMP.length);
+					}
+					draw();
+                }
+				hasData = true;
+			}
+			//得到压缩后的线段或者闭环对象数组
+			function getAfterPolygons() {
+				//阈值改变的情况下才重新压缩
+				if (lastTolerance != tolerance) {
+					//清除上次压缩后的点
+					
+					if (polygonsAfter.length != 0) {
+						polygonsAfter.splice(0, polygonsAfter.length);
+					}
+					let N = polygonsBefore.length;
+					//这里还应该将polygonsBefore的points的DEL标记置为初始状态，否则，当临界值从大改为小时会出现BUG，从小到大没有这个问题
+					for(let i = 0; i < N; i++) {
+						let n = polygonsBefore[i].POINTS.length;
+						for(let j = 0; j < n; j++) {
+							polygonsBefore[i].POINTS[j].DEL = false;
+						}
+					}
+					for(let i = 0; i < N; i++) {
+						let n = polygonsBefore[i].POINTS.length;
+						if (polygonsBefore[i].isClose == false) {
+							//当线段不围成一个面时
+							let id = polygonsBefore[i].ID;
+							let pointsTemp = new Array();
+							let pointsDelTemp_1 = polygonsBefore[i].POINTS.slice();
+							//进行道格拉斯压缩,运行算法后部分点会被标记为删除，利用该标记便可以得到压缩后的对象数组
+							DouglasPeucker(pointsDelTemp_1, 0, pointsDelTemp_1.length - 1);
+							getLastPoints(pointsTemp, pointsDelTemp_1); //保留不被压缩掉的点存入pointsTemp
+							getlastPolygonLine(id, pointsTemp, false); //得到压缩后的一段线段
+						} else {
+							//当线段围成面时
+							let pointsTemp = new Array();
+							let id = polygonsBefore[i].ID;
+							let cut = getCutNumber(polygonsBefore[i].POINTS); //找到离起点最远点的下标,以此切断闭环
+							let pointsDelTemp_2 = new Array();
+							convertClose(i, pointsDelTemp_2, 0, cut); //将前半段转存入pointsDelTemp_2
+							let pointsDelTemp_3 = new Array();
+							convertClose(i, pointsDelTemp_3, cut, n); //将后半段转存入pointsDelTemp_3
+							DouglasPeucker(pointsDelTemp_2, 0, pointsDelTemp_2.length - 1);
+							DouglasPeucker(pointsDelTemp_3, 0, pointsDelTemp_3.length - 1);
+							getLastPoints(pointsTemp, pointsDelTemp_2);
+							getLastPoints(pointsTemp, pointsDelTemp_3);
+							getlastPolygonLine(id, pointsTemp, true); //得到压缩后的一个闭环
+						}
+					}
+					lastTolerance = tolerance; //将这次的阈值暂存
+					setCompressionRatio();     //计算压缩率
+					draw(); //绘制
+				}
+			}
+			//将闭环分为两段
+			function convertClose(i, pointsDelTemp, begin, end) {
+				for (let j = begin; j < end; j++) {
+					let poiWithDel = new Point(0, 0);
+					poiWithDel.X = polygonsBefore[i].POINTS[j].X;
+					poiWithDel.Y = polygonsBefore[i].POINTS[j].Y;
+					pointsDelTemp.push(JSON.parse(JSON.stringify(poiWithDel)));
+				}
+				return pointsDelTemp;
+			}
+			//得到压缩后的一段线段或者一个闭环，布尔值决定，并将其压入最后的数组
+			function getlastPolygonLine(id, pointsTemp, bool) {
+				let POINTS = pointsTemp.slice();
+				pointsTemp.splice(0, pointsTemp.length);
+				let polygon = new Polygon(id, POINTS);
+				polygon.isClose = bool;
+				polygonsAfter.push(polygon);
+				return polygonsAfter;
+			}
+			//得到压缩后剩下的不被删除的点
+			function getLastPoints(pointsTemp, pointsDelTemp) {
+				let n = pointsDelTemp.length;
+				let i = 0;
+				for(let j = 0; j < n; j++) {
+					if(pointsDelTemp[j].DEL == false) {
+						i++;
+						let poiSave = new Point(0, 0);
+						poiSave.X = pointsDelTemp[j].X;
+						poiSave.Y = pointsDelTemp[j].Y;
+						pointsTemp.push(JSON.parse(JSON.stringify(poiSave)));
+					}
+				}
+				console.log(i);
+				return pointsTemp;
+			}
+			//道格拉斯压缩递归算法
+			function DouglasPeucker(points, start, end) {
+				//只剩首尾两个点退出递归
+				if (end - start == 1) {
+					return 0;
+				}
+				let distance = 0;
+				let temp = 0;
+				//获取最大距离
+				for (let i = start + 1; i <= end - 1; i++) {
+					let distemp = distanceToLine(points[start].X, points[start].Y, points[end].X, points[end].Y, points[i].X, points[i].Y); //点到线的距离
+					if (distemp > distance) {
+						distance = distemp;
+						temp = i;
+					}
+				}
+				//最大距离小于临界值则全部舍去
+				if (distance <= tolerance) {
+					for (let i = start + 1; i <= end - 1; i++) {
+						points[i].DEL = true;
+					}
+					return 0;
+				} else {
+					//否则进入下一层递归
+					DouglasPeucker(points, start, temp);
+					DouglasPeucker(points, temp, end);
+				}
+			}
+			//获取离起点最远的点的下标
+			function getCutNumber(points) {
+				let dismax = 0;
+				let temp = 0;
+				let n = points.length;
+				for (let i = 1; i < n; i++) {
+					let dx = points[i].X - points[0].X;
+					let dy = points[i].Y - points[0].Y;
+					let dis = Math.sqrt(dx * dx + dy * dy);
+					if (dis > dismax) {
+						dismax = dis;
+						temp = i;
+					}
+				}
+				return temp;
+			}
+			//点到直线距离
+			function distanceToLine(x1, y1, x2, y2, x0, y0) {
+				let A = y2 - y1;
+				let B = x1 - x2;
+				let C = x2 * y1 - x1 * y2;
+				let dis = Math.abs(A * x0 + B * y0 + C) / Math.sqrt(A * A + B * B);
+				return dis;
+			}
+			//绘制地图
+			function draw() {
+				if (isDraw == true) {
+					context.clearRect(0, 0, canvas.width, canvas.height);
+				}
+				//绘制未压缩的地图
+				if (change == "before") {
+					let N = polygonsBefore.length;
+					//带有缩放和平移信息的对象
+					let vary = {
+						scale:0, //缩放比例
+						moveX:0, //X轴移动长度
+						moveY:0  //Y轴移动长度
+					};
+					getVary(polygonsBefore,vary);//得到缩放和平移的信息
+					//绘制
+					for (let i = 0; i < N; i++) {
+						let n = polygonsBefore[i].POINTS.length;
+						context.beginPath();
+						let xt = (polygonsBefore[i].POINTS[0].X + vary.moveX) * vary.scale;
+						let yt = canvas.height - (polygonsBefore[i].POINTS[0].Y + vary.moveY) * vary.scale; //canvas坐标轴是反过来的而数据是正的，所以反转一下
+						context.moveTo(xt, yt);
+						for (let j = 1; j < n; j++) {
+							let xt = (polygonsBefore[i].POINTS[j].X + vary.moveX) * vary.scale;
+							let yt = canvas.height - (polygonsBefore[i].POINTS[j].Y + vary.moveY) * vary.scale;
+							context.lineTo(xt, yt);
+						}
+						context.stroke();
+						context.closePath();
+					}
+				}
+				//绘制压缩后的地图
+				if (change == "after") {
+					let N = polygonsAfter.length;
+					let vary = {
+						scale: 0,//缩放比例
+						moveX: 0,//X轴移动长度
+						moveY: 0 //Y轴移动长度
+					};
+					getVary(polygonsAfter,vary);
+					for (var i = 0; i < N; i++) {
+						let n = polygonsAfter[i].POINTS.length;
+						context.beginPath();
+						let xt = (polygonsAfter[i].POINTS[0].X + vary.moveX) * vary.scale;
+						let yt = canvas.height - (polygonsAfter[i].POINTS[0].Y + vary.moveY) * vary.scale;
+						context.moveTo(xt, yt);
+						for (let j = 1; j < n; j++) {
+							let xt = (polygonsAfter[i].POINTS[j].X + vary.moveX) * vary.scale;
+							let yt = canvas.height - (polygonsAfter[i].POINTS[j].Y + vary.moveY) * vary.scale;
+							context.lineTo(xt, yt);
+						}
+						context.stroke();
+						context.closePath();
+					}
+				}
+				isDraw = true;
+			}
+			//确定并绘制压缩前与压缩后的地图
+			function setValue(value) {
+				change = value;
+				draw();
+			}
+			//设置临界值
+			function setTolerance(value) {
+				tolerance = value;
+			}
+			//根据压缩前后的最终的对象数组确定缩放的比例和平移长度
+			function getVary(polygons, vary) {
+				let N = polygons.length;
+				let xMin = polygons[0].POINTS[0].X;
+				let yMin = polygons[0].POINTS[0].Y;
+				let xMax = polygons[0].POINTS[0].X;
+				let yMax = polygons[0].POINTS[0].Y;
+				//获取最小外接矩形
+				for(let i = 0;  i < N; i++) {
+					let n = polygons[i].POINTS.length;
+					for(let j = 0; j < n; j++) {
+						if(polygons[i].POINTS[j].X < xMin) {
+							xMin = polygons[i].POINTS[j].X;
+						}
+						if(polygons[i].POINTS[j].X > xMax) {
+							xMax = polygons[i].POINTS[j].X;
+						}
+						if(polygons[i].POINTS[j].Y < yMin) {
+							yMin = polygons[i].POINTS[j].Y;
+						}
+						if(polygons[i].POINTS[j].Y > yMax) {
+							yMax = polygons[i].POINTS[j].Y;
+						}
+					}
+				}
+				//分别计算xy方向的缩放比例
+				let scaleX = canvas.width / (xMax - xMin);
+				let scaleY = canvas.height / (yMax - yMin);
+				//选取合适的缩放比例,计算平移量
+				if(scaleX < scaleY) {
+					vary.scale = scaleX;
+					let dy = (yMax - yMin) * scaleX;
+					let upY = (canvas.height - dy) / 2 / scaleX;
+					vary.moveX = -xMin;
+					vary.moveY = -yMin + upY;
+				} else {
+					vary.scale = scaleY;
+					let dx = (xMax - xMin) * scaleY;
+					let upX = (canvas.width - dx) / 2 / scaleY;
+					vary.moveX = -xMin + upX;
+					vary.moveY = -yMin;
+				}
+			}
+			//计算压缩率并显示
+			function setCompressionRatio() {
+				let numBefore = 0;
+				let numAfter = 0;
+				let comp = 0;
+				for (let i = 0; i < polygonsBefore.length; i++) {
+					numBefore += polygonsBefore[i].POINTS.length;
+				}
+				for (let i = 0; i < polygonsAfter.length; i++) {
+					numAfter += polygonsAfter[i].POINTS.length;
+				}
+				comp = ((numAfter) / numBefore * 100).toFixed(2);
+				document.getElementById('compression').value = comp.toString() + " %";
+			}
+		</script>
+    </body>
+</html>
+    

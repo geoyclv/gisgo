@@ -1,0 +1,577 @@
+﻿<!DOCTYPE html>
+<html>  
+    <head>
+        <meta charset="utf-8">
+		<title>平面坐标变换</title>
+		<style>
+			body {
+				width: 1000px;
+				margin: 0 auto;
+				position: relative;
+				border-left: 3px solid black;
+				border-right: 3px solid black;
+			}
+			header, footer {
+				background-color: #6991c7;
+				border-top: 3px solid black;
+				border-bottom: 3px solid black;
+			}
+			header {
+				height: 50px;
+			}
+			main {
+				background-color: #bac8e0;
+			}
+			footer {
+				height: 40px;
+				clear: both;
+			}
+			h2, h3 {
+				line-height: 1;
+				margin: 10px 0 10px 0;
+				font-family: '楷体';
+				text-align: center;
+			}
+			h2 {
+				font-size: 30px;
+			}
+			h3 {
+				font-size: 20px;
+			}
+			.navCont, .canvasCont, .changeALLCont, .changeSimCont {
+				padding: 0 auto;
+				margin: 0 auto;
+				text-align: center;
+				font-family: '仿宋';
+				font-weight: bold;
+				font-size: 22px;
+				line-height: 2;
+			}
+			.canvasCont {
+				clear: both;
+				padding-bottom: 10px;
+				position: relative;
+				top: 10px;
+			}
+			.navCont select {
+				font-family: '仿宋';
+				font-weight: bold;
+				font-size: 18px;
+			}
+			.changeALLCont button, .changeSimCont button {
+                display: inline;
+                line-height: 1.5;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 16px;
+                text-align: center;
+                border: 1px solid black;
+                margin: 0 auto;
+            }
+			.changeALLCont button:hover, .changeSimCont button:hover {
+				color: white;
+                background-color: rgba(0,0,0,0.5);
+			}
+			.changeSimCont div {
+				text-align: center;
+				width: 50%;
+			}
+			.changeSimCont #d1 {
+				float: left;
+			}
+			.changeSimCont #d2 {
+				float: right;
+			}
+			.canvasCont {
+				clear: both;
+			}
+		</style>
+    </head>
+    <body onload="drawGrid(myCanvas); drawGrid(myCanvas2);">
+        <header>
+		    <h2>平面坐标变换</h2>
+        </header>			
+        <main>
+            <div class="navCont">
+			    <a>变换类型</a>
+			    <select id="changeChoose">
+			        <option value="normal">正常</option>
+				    <option value="fangda">放大</option>
+				    <option value="suoxiao">缩小</option>
+				    <option value="shangyi">上移</option>
+				    <option value="xiayi">下移</option>
+				    <option value="zuoyi">左移</option>
+				    <option value="youyi">右移</option>
+					<option value="shunzhuan">顺转</option>
+				    <option value="nizhuan">逆转</option>
+					<option value="zuoxie">左斜</option>
+				    <option value="songjian">耸肩</option>
+			    </select>
+			    <a>字体颜色</a>
+			    <select id="fontColor">
+				    <option value="red">红色</option>
+				    <option value="green">绿色</option>
+				    <option value="blue">蓝色</option>
+		        </select>
+		        <a>字体线宽</a>
+			    <select id="lineWidth">
+				    <option value="3">三倍</option>
+				    <option value="5">五倍</option>
+				    <option value="7">七倍</option>
+			    </select>
+			    <a>格网数量</a>
+			    <select id="gridNumber">
+					<option value="16">一六</option>
+			        <option value="12">一二</option>
+				    <option value="20">二零</option>
+			        <option value="24">二四</option>
+			    </select>
+			</div>
+			
+			<div class="changeALLCont">
+				<button id="getAlllData" onclick="newData1(); newData2();">加载所有数据</button>
+				<button id="renewAllCanvas" onclick="main(myCanvas,number,cX,cY);main(myCanvas2,number2,cX2,cY2)">刷新所有画布</button>
+				<button id="deleteAllCanvas" onclick="clearCanvas(myCanvas);clearCanvas(myCanvas2)">清空所有画布</button>
+			</div>
+
+			<div class="changeSimCont">
+			<div id="d1">
+				<button type="button" onclick="newData1();">加载数据1</button>
+				<button type="button" onclick="main(myCanvas,number,cX,cY);">刷新画布1</button>
+				<button type="button" onclick="clearCanvas(myCanvas);">清空画布1</button>
+			</div>
+			<div id="d2">
+				<button type="button" onclick="newData2();">加载数据2</button>
+				<button type="button" onclick="main(myCanvas2,number2,cX2,cY2);">刷新画布2</button>
+				<button type="button" onclick="clearCanvas(myCanvas2);">清空画布2</button>
+			</div>
+			</div>
+
+            <div class="canvasCont">			
+			    <canvas id="myCanvas" width="480" height="480" style="border:1px solid black"  >your browser does not support the canvas tag </canvas>
+			    <canvas id="myCanvas2" width="480" height="480" style="border:1px solid black"  >your browser does not support the canvas tag </canvas>
+			</div>
+			<script>
+			    function newData1(){
+				   //画布一对应文件全局变量
+			       cX=new Array();
+                   cY=new Array();
+				   number=new Array();
+				   URL1='./data/元1.txt';
+				   data1=null;
+				   getData(URL1,data1,number);
+				}
+				
+			    function newData2(){
+				   //画布二对应文件全局变量
+				   cX2=new Array(); 
+                   cY2=new Array(); 
+				   number2=new Array();
+				   URL2='./data/策1.txt';
+				   data2=null;
+				   getData(URL2,data2,number2);
+				}
+
+				function getData(URL,DATA,NUMBER){
+					var requestURL=URL;
+					var request=new XMLHttpRequest();
+					request.open('GET',requestURL);
+					request.responseType='text';
+					request.send();
+					request.onload=function() {
+						DATA=request.response;
+						getPoint(DATA,NUMBER);
+					}
+				}
+				
+				//主函数
+                function main(canvasid,NUMBER,changeX,changeY){
+                    clearCanvas(canvasid);
+                    drawGrid(canvasid);
+                    drawName(NUMBER,canvasid,changeX,changeY);					
+                }
+
+				//绘制网格
+				function drawGrid(canvasid){                   
+                    var cxt=canvasid.getContext("2d"); 
+					cxt.lineWidth=1;
+					cxt.strokeStyle = 'gray';
+					var gridNum=parseInt(document.getElementById("gridNumber").value);
+					var maxGridNum=24;  //根据画布大小和单元网格边长确定的画布能够容纳的最大网格数量
+					var tempXY=(maxGridNum-gridNum)*10;   //网格左下角对应XY
+					var gridSize=20;    //单元格边长
+					var borderXY=gridNum*gridSize+tempXY; //网格右边对应XY
+					for(x=tempXY,y=tempXY;y<=borderXY;y+=gridSize){
+					    cxt.beginPath();
+					    cxt.moveTo(x,y);
+					    cxt.lineTo(borderXY,y);
+						cxt.stroke();
+					}		
+                    for(x=tempXY,y=tempXY;x<=borderXY;x+=gridSize){		
+                        cxt.beginPath();					
+					    cxt.moveTo(x,y);
+					    cxt.lineTo(x,borderXY);				
+						cxt.stroke();
+					}	   
+				}
+
+				//销毁画布
+				function clearCanvas(canvasid){  
+                    var cxt=canvasid.getContext("2d");  
+                    canvasid.height=canvasid.height;  
+                }
+				
+                //提取数字，并存入数组
+                function getPoint(DATA,NUMBER){
+                    var heap=DATA.replace(/[^0-9.dD]/ig,"A");		
+                    var numcharacter="";      //存储数字字符                    
+                    var i=0;
+                    var flag=1;               //跳过第一位编号
+                    var n=0;                  //标识数字与字符转换位置
+                    var character=heap[flag]; //获取字符串的第二个字符
+					var numline=0;            //标记线段数，用于处理如何根据线段ID跳过线段ID处理后面有意义的数字
+					var isend=0;
+					
+                    while(character!=null){
+                        if(character=="d"||character=="D"){
+                            isend=1;
+							numline++;
+							NUMBER[i++]=-1; 
+                        }
+						if(numline<10 && isend){
+						    flag+=5; 
+						    character=heap[flag];
+						    isend=0;
+						}
+						if(9<numline<100 && isend){
+						    flag+=6;
+							character=heap[flag];
+							isend=0;
+						}
+                        if(character!="A"){
+                            n=1;
+                            numcharacter+=character;
+                        }
+                        else{
+                            if(n){
+                                NUMBER[i++]=parseFloat(numcharacter); //将字符转换为浮点数
+                                numcharacter="";
+                                n=0;
+                            }
+                        }
+                        character=heap[++flag];
+                    }					
+                    return NUMBER;	
+                }
+			   
+                function drawName(NUMBER,canvasid,changeX,changeY){
+                    var cxt=canvasid.getContext('2d'); 
+					var n=NUMBER.length;
+					var whichChange=document.getElementById("changeChoose").value;
+					cxt.lineWidth=parseInt(document.getElementById("lineWidth").value);
+					cxt.strokeStyle=document.getElementById("fontColor").value;
+					
+					//用于最终绘图
+				    var x=new Array();
+                    var y=new Array();
+					
+					//字体中心点坐标
+				    var xf=240;  
+				    var yf=240;
+					
+				    //二次提取坐标点并放入全局变量中，之后每次除左斜和耸肩变换外都将变化后的坐标存储在其中
+                    if(changeX.length==0&&changeY.length==0){
+					    for(var i=0,j=0,c=0;i<n;i++){
+							if(NUMBER[i]!=-1){
+                                x[j]=NUMBER[i];
+								changeX[c]=x[j];
+                                y[j]=480-NUMBER[++i];
+								changeY[c]=y[j];
+								c++;
+                                j++;
+                            }
+							
+						    else{
+								changeX[c]=-1;
+							    changeY[c++]=-1;
+                                j=0;
+                            }
+                        }
+					}
+					
+				    if(whichChange=="normal"){
+					    var shangyiSize=20;
+						//这一相同循环作用是能够从其他变换回到正常状态
+						for(var i=0,j=0,c=0;i<n;i++){
+							if(NUMBER[i]!=-1){
+                                x[j]=NUMBER[i];
+								changeX[c]=x[j];
+                                y[j]=480-NUMBER[++i];
+								changeY[c]=y[j];
+								c++;
+                                j++;
+                            }
+						    else{
+								changeX[c]=-1;
+							    changeY[c++]=-1;
+                                j=0;
+                            }
+                        }
+						
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+						        x[j]=changeX[i];
+								changeX[i]=x[j];
+							    y[j]=changeY[i];
+							    changeY[i]=y[j];
+								j++;
+							}
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }	
+				    }
+					
+				    if(whichChange=="fangda"){
+					    var fangdaSize=1.1;
+						for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+						        x[j]=changeX[i]*fangdaSize+(1-fangdaSize)*xf;
+								changeX[i]=x[j];
+							    y[j]=changeY[i]*fangdaSize+(1-fangdaSize)*yf;
+							    changeY[i]=y[j];
+								j++;
+							}
+							
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="suoxiao"){
+					    var suoxiaoSize=0.9;
+						for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+						        x[j]=changeX[i]*suoxiaoSize+(1-suoxiaoSize)*xf;
+								changeX[i]=x[j];
+							    y[j]=changeY[i]*suoxiaoSize+(1-suoxiaoSize)*yf;
+							    changeY[i]=y[j];
+								j++;
+							}
+							
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="shangyi"){
+					    var shangyiSize=20;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+						        x[j]=changeX[i];
+								changeX[i]=x[j];
+							    y[j]=changeY[i]-shangyiSize;
+							    changeY[i]=y[j];
+								j++;
+							}
+							
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="xiayi"){
+					    var xiayiSize=20;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+						        x[j]=changeX[i];
+								changeX[i]=x[j];
+							    y[j]=changeY[i]+xiayiSize;
+							    changeY[i]=y[j];
+								j++;
+							}
+							
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="zuoyi"){
+					    var zuoyiSize=20;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+							    y[j]=changeY[i];
+							    changeY[i]=y[j];
+						        x[j]=changeX[i]-zuoyiSize;
+								changeX[i]=x[j];
+							   
+								j++;
+							}
+							
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="youyi"){
+					    var youyiSize=20;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){
+						        x[j]=changeX[i]+youyiSize;
+								changeX[i]=x[j];
+							    y[j]=changeY[i];
+							    changeY[i]=y[j];
+								j++;
+							}
+							
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="shunzhuan"){
+					    var shunzhuanSize=90*Math.PI/180;
+						var xf=240;  
+						var yf=240;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){						    
+						        x[j]=changeX[i]*Math.cos(shunzhuanSize)-changeY[i]*Math.sin(shunzhuanSize)+(1-Math.cos(shunzhuanSize))*xf+yf*Math.sin(shunzhuanSize);
+								y[j]=changeX[i]*Math.sin(shunzhuanSize)-changeY[i]*Math.cos(shunzhuanSize)+(1+Math.cos(shunzhuanSize))*yf-xf*Math.sin(shunzhuanSize);								
+							    changeX[i]=x[j]; 
+								changeY[i]=y[j];
+								j++;
+							}
+					
+							else{ 
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="nizhuan"){
+					    var shunzhuanSize=-90*Math.PI/180;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){						    
+						        x[j]=changeX[i]*Math.cos(shunzhuanSize)-changeY[i]*Math.sin(shunzhuanSize)+(1-Math.cos(shunzhuanSize))*xf+yf*Math.sin(shunzhuanSize);
+								y[j]=changeX[i]*Math.sin(shunzhuanSize)-changeY[i]*Math.cos(shunzhuanSize)+(1+Math.cos(shunzhuanSize))*yf-xf*Math.sin(shunzhuanSize);								
+								changeX[i]=x[j]; 
+								changeY[i]=y[j];
+								j++;
+							}
+	
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="zuoxie"){
+					    var zuoxieSize=-20*Math.PI/180;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){						    
+						        x[j]=changeX[i]*Math.cos(zuoxieSize)-changeY[i]*Math.sin(zuoxieSize)+(1-Math.cos(zuoxieSize))*xf+yf*Math.sin(zuoxieSize);
+								y[j]=changeY[i];				
+								j++;
+							}
+
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+					
+					if(whichChange=="songjian"){
+					    var songjianSize=15*Math.PI/180;
+		                for(var i=0,j=0;i<changeX.length;i++){
+						    if((changeX[i]!=-1)&&(changeY[i]!=-1)){	
+                                x[j]=changeX[i];
+                                //唯一需要注意的是这一步，在纸上画一下就能理解为什么要这样做								
+								y[j]=480-(changeX[i]*Math.sin(songjianSize)-changeY[i]*Math.cos(songjianSize)+(1+Math.cos(songjianSize))*yf-xf*Math.sin(songjianSize));
+								j++;
+							}
+
+							else{
+							    cxt.beginPath();
+                                cxt.moveTo(x[0],y[0]);
+                                for(var k=1;k<j;k++){
+                                    cxt.lineTo(x[k],y[k]);
+                                }   
+                                cxt.stroke();
+                                j=0;
+                            }
+                        }
+					}
+                }
+            </script>
+        </main>
+        <footer>
+			<h3>10170312<h3>
+        </footer>		
+    </body>  
+</html> 

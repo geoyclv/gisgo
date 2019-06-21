@@ -1,0 +1,240 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>中国象棋跳马问题</title>
+        <style>
+            body {
+                width: 1000px;
+                margin: 0 auto;
+                position: relative;
+                border-left: 3px solid black;
+                border-right: 3px solid black;
+                /*top: 10px;*/
+            }
+            header,footer {
+                background-color: #6991c7;
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+            }
+            header {
+                height: 50px;
+            }
+            main {
+                position: relative;
+                background-color: #bac8e0;
+                min-height: 650px;
+            }
+            footer {
+                height: 40px;
+            }
+            h2,h3 {
+                line-height: 1;
+                /*margin: 10px;*/
+                /*什么时候用外边距什么时候用内边距？根据是否需要设置盒子背景颜色来看*/
+                /*每一个盒子都有margin和padding，但有的盒子不能设置左右值*/
+                padding: 10px;
+                margin: 0 auto;
+                font-family: '楷体';
+                text-align: center;
+            }
+            h2 {
+                font-size: 30px;
+            }
+            h3 {
+                font-size: 20px;
+            }
+            p {
+                padding: 16px;
+                margin: 0 auto;
+            }
+            .navCont {
+                padding: 16px 0;
+                text-align: center;
+            }
+            .navCont h3 {
+                display: inline;
+                line-height: 1;
+                margin: 0 auto;
+                font-family: '仿宋';
+                font-weight: bold;
+                text-align: center;
+            }
+            .navCont input {
+                width: 50px;
+                height: 20px;
+                font-size: 18px;
+            }
+            .resultCont {
+                /*width: 100%;*//*宽度已经继承自body标签，不用再显示声明*/
+                text-align: center;
+            }
+            .resultCont button {
+                display: inline;
+                line-height: 1.5;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 20px;
+                text-align: center;
+                border: 1px solid black;
+                margin: 0 auto;
+            }
+            .resultCont button:hover{
+                color: white;
+                background-color: rgba(0,0,0,0.5);
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h2>中国象棋跳马问题</h2>
+        </header>
+        <main>
+            <div class="navCont">
+                <h3>问题描述</h3>
+                <p>有一m*n的棋盘(即棋盘有m行和n列)，一马放在棋盘中任意位置，马按中国象棋跳法，从初始位置起跳，跳至边界后返回，求所有能返回初始位置的周游路线。</p>
+                <h3>棋盘行数my</h3>
+                <input type="number" id="MY" value="4" min="0" max="5" onchange="setChange();">
+                <h3>棋盘列数nx</h3>
+                <input type="number" id="NX" value="4" min="0" max="5" onchange="setChange();">
+                <h3>马初始行sy</h3>
+                <input type="number" id="SY" value="0" min="0" max="4" onchange="setChange();">
+                <h3>马初始列sx</h3>
+                <input type="number" id="SX" value="0" min="0" max="4" onchange="setChange();">
+            </div>
+            <div class="resultCont">
+                <button type="button" class="button" onclick="result();">计算显示路径</button>
+                <p id="p1"></p>
+            </div>
+        </main>
+        <footer>
+            <h3>10170312</h3>
+        </footer>
+        <script>
+            var num = 0; //路径数目
+			var begin = true; //标识是否为起始,避免开始时被认为回到起始点
+			var roads = new Array(); //路径数组
+			var str = ""; //输出的字符串
+			var tar = document.getElementById('p1'); //输出元素
+			var change = true; //缺省值
+
+            //马的构造函数
+			function Horse(y,x) {
+                this.y = y; //马所在行数
+				this.x = x; //马所在列数
+                this.jumpD = [ [2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1] ]; //八个方向
+			}
+            //马移动(前进或者回退)
+            Horse.prototype.changeYX = function(jumpY,jumpX) {
+                this.y += jumpY;
+				this.x += jumpX;
+            };
+            //棋盘的构造函数
+            function Map(my,nx) {
+                this.my = my; //棋盘行数
+                this.nx = nx; //棋盘列数
+                this.grid = new Array(); //坐标格网点数组，保存马是否走过的状态
+            }
+            //创建棋盘初始状态
+            Map.prototype.createState = function() {
+                for(var i = 0; i < this.my; i++) {
+                    var lin = new Array();
+                    for(var j = 0; j < this.nx; j++) {
+                        lin[j] = 0;
+                    }
+                    this.grid[i] = lin.slice();
+                }
+            };
+            //判断马是否在棋盘内
+            function horseInMap(horse,map) {
+                if((horse.x <= map.nx - 1) && (horse.x >= 0) && (horse.y <= map.my - 1) && (horse.y >= 0)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            //判断能回到起点的路径是否达到了棋盘边界
+            function roadToBorder(roads,map) {
+                for(var i = 0;i < roads.length; i++) {
+                    if((roads[i][0] == 0) || (roads[i][0] == map.my - 1) || (roads[i][1] == 0) || (roads[i][1] == map.nx - 1)) {
+                        return true;
+                    }
+                } 
+                return false;  
+            } 
+            //路径存入字符串
+            function saveRoads(roads) {
+                for(var i = 0; i < roads.length; i++) {
+                    str += "(" + roads[i][0] + "," + roads[i][1] + ")-";
+                }
+            }
+                    
+            //递归寻找路径
+            function Jump(horse,jumpY,jumpX,map) {
+                horse.changeYX(jumpY,jumpX); //跳一步
+                //先判断是否在棋盘内
+                if(horseInMap(horse,map) == false) {
+                    horse.changeYX(-jumpY,-jumpX);
+                    return -1;
+                }
+                //是否回到了起点
+                if((begin == false) && (horse.x == sx) && (horse.y == sy)) {
+                    if(roadToBorder(roads,map) == true) {
+                        num++;
+                        str += "路径" + num + ":";
+                        saveRoads(roads);
+                        str += "(" + sy + "," + sx + ")<br>"; //将起点加入路径作为最后一个位置
+                        horse.changeYX(-jumpY,-jumpX);
+                        return 0;
+                    } else {
+                        return -1;
+                    }
+                }
+                //是否走到了已经走过的点
+                if(map.grid[horse.y][horse.x] == 1) {
+                    horse.changeYX(-jumpY,-jumpX);
+                    return -1;
+                } else {
+                    map.grid[horse.y][horse.x] = 1;
+                }
+                        
+                begin = false;
+                roads.push([horse.y,horse.x]); //加入路径
+                //在此基础上跳新的一轮
+                for(var i = 0; i < 8; i++) {
+                    map1 = JSON.parse(JSON.stringify(map)); //保存当前的棋盘状态
+                    Jump(horse,horse.jumpD[i][0],horse.jumpD[i][1],map1);
+                }
+                        
+                roads.pop(); //这里表示走完所有可能的路径仍未到达起始点,去掉这个点，理解这一步很重要
+                horse.changeYX(-jumpY,-jumpX); //退回上一个点
+                return 0;
+            }
+                    
+            //计算入口和显示
+            function result() {
+                if(change == true) {
+                    sx = parseInt(document.getElementById("SX").value),
+                    sy = parseInt(document.getElementById("SY").value),
+                    nx = parseInt(document.getElementById("NX").value),
+                    my = parseInt(document.getElementById("MY").value);
+                    var map = new Map(my,nx); //棋盘实例化
+                    map.createState(); //初始化棋盘
+                    var horse = new Horse(sy,sx); //马实例化
+                    Jump(horse,0,0,map); //第一步马落在起始点，然后在递归函数内从起始点不断寻找满足条件的路径
+                    tar.innerHTML = str; //显示最终路径
+                    change = false; //将状态置为假，直到用户改变输入
+                }
+            }
+
+            function setChange() {
+                change = true;
+                num = 0;
+                str = "";
+                tar.innerHTML = str;
+                roads.splice(0,roads.length);
+                begin = true;
+            }
+        </script>  
+    </body>
+</html>

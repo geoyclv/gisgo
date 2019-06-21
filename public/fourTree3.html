@@ -1,0 +1,275 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>四叉树四进制M码程序</title>
+        <style>
+            body {
+                width: 1000px;
+                margin: 0 auto;
+                position: relative;
+                border-left: 3px solid black;
+                border-right: 3px solid black;
+            }
+            header,footer {
+                background-color: #6991c7;
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+            }
+            header {
+                height: 50px;
+            }
+            main {
+                position: relative;
+                background-color: #bac8e0;
+                min-height: 650px;
+            }
+            footer {
+                height: 40px;
+                clear: both;
+            }
+            h2,h3 {
+                line-height: 1;
+                padding: 10px;
+                margin: 0 auto;
+                font-family: '楷体';
+                text-align: center;
+            }
+            h2 {
+                font-size: 30px;
+            }
+            h3 {
+                font-size: 20px;
+            }
+            p {
+                padding: 10px;
+                margin: 0 auto;
+            }
+            .navCont {
+                padding: 16px;
+                text-align: center;
+                margin: 0 auto;
+            }
+            .resultCont {
+                padding: 0 16px 16px 16px;
+                text-align: center;
+                margin: 0 auto;
+            }
+            .navCont h3, .resultCont h3 {
+                display: block;;
+                line-height: 1;
+                margin: 0 auto;
+                font-family: '仿宋';
+                font-weight: bold;
+                text-align: center;
+            }
+            .navCont button {
+                display: inline;
+                line-height: 1.5;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 20px;
+                text-align: center;
+                border: 1px solid black;
+                margin: 10px;
+            }
+            .navCont button:hover {
+                color: white;
+                background-color: rgba(0,0,0,0.5);
+            }
+            #table1, #table2, #table3, #table4 {
+                border-collapse: collapse;
+                border: 2px solid black;
+                margin: 0 auto;
+            }
+            td {
+                border: 1px solid gray;
+                padding: 10px;
+                text-align: center;
+            }
+            caption {
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h2>四叉树四进制M码程序</h2>
+        </header>
+        <main>
+            <div class="navCont">
+                <h3>问题描述</h3>
+                <p>编写求取下述矩阵四叉树四进制M码程序，并将运算结果返回。</p>
+                <button type="button" class="button" onclick="getData();">加载数据</button>
+                <button type="button" class="button" onclick="getResult()">计算显示</button>
+            </div>
+            <div class="resultCont">
+                <table id="table1"></table>
+                <table id="table2"></table>
+                <table id="table3"></table>
+                <table id="table4"></table>
+            </div>
+        </main>
+        <footer>
+            <h3>10170312</h3>
+        </footer>
+        <script>
+            let initDep; //最大深度
+            let dataName2 = "测试数据初始位置码";
+            let dataName3 = "测试数据最终位置码";
+            let dataName4 = "测试数据最终深度值";
+            let fTable1 = document.getElementById("table1");
+            let fTable2 = document.getElementById("table2");
+            let fTable3 = document.getElementById("table3");
+            let fTable4 = document.getElementById("table4");
+            let hasData = false;
+            let hasResult = false;
+            let Iy, Ix, matrix;
+            let str = new Array(); //存储像元对象的属性
+            let pixelsBefore = new Array();
+            let pixelsTemp = new Array();
+            let pixelsAfter = new Array();
+            //最小像元类
+            function Pixel(iy, ix, depth, value) {
+                this.iy = iy; //行号
+                this.ix = ix; //列号
+                this.Morton = 0; //位置码
+                this.depth = depth; //深度
+                this.value = value; //属性值
+                this.merge = false; //归并标识
+            }
+            //根据行列号求位置码
+            Pixel.prototype.getMorton = function() {
+                this.Morton = 2 * parseInt(this.iy.toString(2)) + parseInt(this.ix.toString(2));
+            };
+            //获取数据
+            function getData() {
+                if(hasData == true) {
+                    return -1;
+                }
+                let requestURL = './data/fourTree4.json';
+                let request = new XMLHttpRequest();
+                request.open('GET',requestURL);
+                request.responseType = 'json';
+                request.send();
+                request.onload = function(e) {
+                    let dataName = request.response['dataName'];
+                    matrix = request.response['matrix'];
+                    Iy = request.response['Iy'];
+                    Ix = request.response['Ix'];
+                    initDep = getBaseLog(2, Ix);
+                    for(let i = 0; i < matrix.length; i++) {
+                        for(let j = 0; j < matrix[i].length; j++) {
+                            let pixel = new Pixel(i, j, initDep, matrix[i][j]);
+                            pixel.getMorton();
+                            pixelsBefore.push(pixel);
+                        }
+                    }
+                    for(let j in pixelsBefore[0]) {
+                        str.push(j);
+                    }
+                    renderData(fTable1, dataName, pixelsBefore, str[4]); //渲染属性值到表格中
+                    //renderData(fTable2, dataName2, pixelsBefore, str[2]); //第3层位置码
+                }
+                hasData = true;
+            }
+            //返回最大深度
+            function getBaseLog(x, y) {
+                return Math.log(y) / Math.log(x);
+            }
+            //填充渲染数据到表格中
+            function renderData(fTable, dataName, _pixels, attribute) {
+                let ixTemp = Ix;
+                let fCaption = document.createElement('caption');
+                fTable.appendChild(fCaption);
+                fCaption.textContent = dataName;
+                for(let i = 0, j = 0; i < Iy; i++) {
+                    let fTr = document.createElement('tr');
+                    fTable.appendChild(fTr);
+                    for(; j < _pixels.length; j++) {
+                        if(j == ixTemp) {
+                            ixTemp += Ix;
+                            break;
+                        }
+                        let fTd = document.createElement('td');
+                        fTd.textContent = _pixels[j][attribute];
+                        fTr.appendChild(fTd);
+                    }
+                }
+            }
+            //计算入口
+            function getResult() {
+                if(hasResult == true) {
+                    return -1;
+                }
+                renderData(fTable2, dataName2, pixelsBefore, str[2]); //第3层位置码
+                pixelsTemp = JSON.parse(JSON.stringify(pixelsBefore));
+                let lay = initDep;
+                //let num = pixelsTemp[0].depth;
+                //归并改变位置之后再按照行号排序回归后打印位置码
+                //当第二层归并的时候，因为第一层时有的数没有归并(false)，导致其M码比较大，
+                //以至于第二层重新排序时没有归并的排到了后面！！！后续即使用iy排序也在前面
+                //第一层归并时没有问题
+                //排序？
+                pixelsTemp.sort(compare('Morton')); //排序
+                while(lay >= 1) {
+                    //pixelsTemp = JSON.parse(JSON.stringify(pixelsBefore));
+                    //pixelsTemp.sort(compare('ix')); //排序
+                    //pixelsTemp.sort(compare('iy')); //排序
+                    //pixelsTemp.sort(compare('Morton')); //排序
+                    let n = Math.pow(4, (initDep - lay));
+                    for(let i = 0; i < pixelsTemp.length; i += (4 * n)) {
+                        let a = pixelsTemp[i].value,
+                            b = pixelsTemp[i + 1 * n].value,
+                            c = pixelsTemp[i + 2 * n].value,
+                            d = pixelsTemp[i + 3 * n].value;
+                        if((a == b) && (a == c) && (a == d)) {
+                            let num = pixelsTemp[i].depth;
+                            changePixs(num, pixelsTemp, i, n);
+                        }
+                    }
+                    lay--;
+                }
+                pixelsAfter = JSON.parse(JSON.stringify(pixelsTemp));
+                pixelsAfter.sort(compare('ix')); //再用ix排序很重要，且应该在iy之前排序，用其他数据测试一下，如果没有问题则很巧妙
+                pixelsAfter.sort(compare('iy'));
+                //pixelsAfter.sort(compare('ix'));
+                renderData(fTable3, dataName3, pixelsAfter, str[2]); //最终位置码
+                renderData(fTable4, dataName4, pixelsAfter, str[3]); //最终深度码
+                hasResult = true;
+                //console.log(pixelsBefore);
+                //console.log(pixelsAfter);
+            }
+            //改变像元属性
+            function changePixs(num, pixelsTemp2, i, n) {
+                let mortonTemp = pixelsTemp2[i].Morton;
+                let str = mortonTemp.toString();
+                while(str.length <= num) {
+                    str = "00" + str;
+                    str.length++;
+                }
+                str = str.substring(0, str.length - 1);
+                let res = parseInt(str);
+                for(let j = i; j < i + 4 * n; j++ ) {
+                    pixelsTemp2[j].depth -= 1;
+                    pixelsTemp2[j].merge = true;
+                    pixelsTemp2[j].Morton = res;
+                }
+            }
+            //根据对象属性值排序
+            function compare(property) {
+                return function(a,b){
+                    var value1 = a[property];
+                    var value2 = b[property];
+                    return value1 - value2;
+                }
+            }
+            //对数字排序
+            /*function sortNumber(a, b) {
+                return a - b;
+            }*/
+        </script>
+    </body>
+</html>

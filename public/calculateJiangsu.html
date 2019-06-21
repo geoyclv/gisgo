@@ -1,0 +1,447 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>计算显示江苏省面积</title>
+    </head>
+        <style>
+            body{
+                width: 1000px;
+                margin: 0 auto;
+                position: relative;
+                border-left: 3px solid black;
+                border-right: 3px solid black;
+            }
+            header,footer{
+                background-color: #6991c7;
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+            }
+            header{
+                height: 50px;
+            }
+            main{
+                position: relative;
+                background-color: #bac8e0;
+            }
+            footer{
+                height: 40px;
+				clear: both;
+            }
+            h2{
+                line-height: 1;
+                margin: 10px 0 10px 0;
+                font-family: '楷体';
+                font-size: 30px;
+                text-align: center;
+            }
+            h3{
+                line-height: 1;
+                font-size: 20px;
+                margin: 10px 0 10px 0;
+                text-align: center;
+            }
+            .canvasCont,.menuCont{
+                clear: both;
+                text-align: center;
+                margin: 0 auto;
+                padding: 20px 0 15px 0;
+            }
+            .menuCont .d1, .areaCont .d1{
+                width: 50%;
+                margin: 0 auto;
+                float: left;
+            }
+            .menuCont .d2,.areaCont .d2 {
+                width: 50%;
+                margin: 0 auto;
+                float: right;
+            }
+            .menuCont button{
+                margin: 0 auto;
+                line-height: 1.5;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 20px;
+                text-align: center;
+                border: 1px solid black;
+                position: relative;
+            }
+            .menuCont button:hover{
+                color: white;
+                background-color: rgba(0,0,0,0.5);
+            }
+
+            .canvasCont canvas{
+                margin: 0 auto;
+                padding: 10px;
+            }
+            caption, td{
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 16px;
+            }
+            td{
+                text-align: center;
+            }
+            table {
+                border-collapse: collapse;
+                border: 2px solid black;
+                margin: 0 auto;
+                padding: 0 16px 16px 16px;
+            }
+            td, th {
+                border: 1px solid gray;
+                padding: 10px 20px;
+            }
+            th {
+                background-color: rgb(235,235,235);
+            }
+
+        </style>
+        <body>
+            <header>
+                <h2>计算显示江苏省面积</h2>
+            </header>
+            <main>
+                <div class="menuCont">
+                    <div>
+                        <button onclick="newPoints();getMercatorPoints();">加载数据</button>
+                    </div>
+                    <div class="d1">
+                        <button class="canvas1Button" onclick="draw(canvas1,MercatorPoints)">墨卡托投影</button>
+                        <button class="canvas1Button" onclick="MercatorArea(MercatorPoints);processAreaData(MercatorPointsArea,lastMercatorPointsArea);showArea(areaName1,fTable1,lastMercatorPointsArea)">计算显示面积</button>
+                    </div>
+                    <div class="d2">
+                        <button class="canvas2Button" onclick="getGCSPoints(MercatorPoints);draw(canvas2,GCSPoints)">墨卡托反解</button>
+                        <button class="canvas2Button" onclick="getGCSPoints(MercatorPoints);GCSArea(GCSPoints);processAreaData(GCSPointsArea,lastGCSPointsArea);showArea(areaName2,fTable2,lastGCSPointsArea)">计算显示面积</button>
+                    </div>
+                </div>
+                <div class="areaCont">
+                    <div class="d1">
+                        <table id="t1">
+                        </table>
+                    </div>
+                    <div class="d2">
+                        <table id="t2">
+                        </table>
+                    </div>
+                </div>
+                <div class="canvasCont">			
+                    <canvas id="canvas1" width="460" height="500" style="border:1px solid black">your browser does not support the canvas tag </canvas>
+                    <canvas id="canvas2" width="460" height="500" style="border:1px solid black">your browser does not support the canvas tag </canvas>
+                </div>
+            </main>
+            <footer>
+                <h3>10170312</h3>
+            </footer>
+            <script>
+                var areaName1="墨卡托投影面积";
+                var areaName2="墨卡托反解面积";
+                var fTable1=document.getElementById("t1");
+                var fTable2=document.getElementById("t2");
+                //销毁画布
+                function clearCanvas(canvasId) {
+                    cxt=canvasId.getContext("2d");  
+                    canvasId.height=canvasId.height;
+                }
+                
+                function getRandomColor() {
+                    return "rgb(" +Math.round(Math.random()*255)+ "," +Math.round(Math.random()*255)+ "," +Math.round(Math.random()*255)+ ")";
+                }
+    
+                function initCanvas(canvasId,cxtColor,cxtWidth) {
+                    clearCanvas(canvasId);
+                    cxt=canvasId.getContext("2d");
+                    cxt.lineWidth=cxtWidth;
+                    cxt.strokeStyle=cxtColor;
+                }
+    
+                function newPoints() {
+                    e2=0.006693421622966;  //54坐标系椭球体的第一偏心率平方
+			        e02=0.006738525414684; //54坐标系椭球体的第二偏心率平方
+			        a=6378245;             //54坐标系椭球体的长半轴
+			        b=6356863.0187730473;  //54坐标系椭球体的短半轴
+                    e=1/298.3;             //54坐标系椭球体的扁率
+                    MercatorPoints=new Array();        //存储墨卡托投影点
+                    GCSPoints=new Array();             //存储墨卡托反解后的点
+                    lineNumber=new Array();            //存储线段ID
+                    MercatorPointsArea=new Array();    //存储墨卡托投影下每个ID的面积
+                    GCSPointsArea=new Array();         //存储地理坐标系下每个ID的面积
+                    lastMercatorPointsArea=new Array();//存储最终存储墨卡托投影下每个城市的面积
+                    lastGCSPointsArea=new Array();     //存储最终地理坐标系下每个城市的面积
+                }
+                
+                function getMercatorPoints() {
+                    var requestURL = './data/Area_polygon.txt';
+                    var request = new XMLHttpRequest();
+                    request.open('GET',requestURL);
+                    request.responseType = 'text';
+                    request.send();
+                    request.onload = function(e) {
+                        var str=request.response;  //this.result
+                        var numcharacter="";
+                        var j=0;
+                        var i=0;
+                        var flag=0;
+                        var character=str[flag];
+                        while (character!=null) {
+                            if (character=="E") {
+                                flag+=5; 
+                                character=str[flag];
+                            } //该判断条件用来跳过最后一条线段末尾的两个'END'，当跳过第二个'END'时，str字符串读取结束，结束总循环while1
+                            else {
+                                while (character!="\n") {
+                                    numcharacter+=character;
+                                    character=str[++flag];
+                                } //while2 该循环用于跳过ID编号，直接到达下一行经度数字字符的第一位字符的前面位置
+                                character=str[++flag]; //下一行经度数字字符的第一位赋值给character
+                                lineNumber.push(parseFloat(numcharacter)); //保存线段ID
+                                numcharacter="";
+                                while (character!="E") {
+                                    while (character!=",") {
+                                        numcharacter+=character;
+                                        character=str[++flag];
+                                    } //while4 long 该循环用于将经度数字字符一位一位地加到字符numcharacter中
+                                    character=str[++flag];
+                                    MercatorPoints[i++]=parseFloat(numcharacter); //long 将保存了经度所有位数字字符的字符串转为浮点数
+                                    numcharacter="";
+                                    while (character!="\n") {
+                                        numcharacter+=character;
+                                        character=str[++flag];
+                                    } //while5 lat 该循环用于将纬度数字字符一位一位地加到字符numcharacter中
+                                    character=str[++flag];
+                                    MercatorPoints[i++]=parseFloat(numcharacter); //lat 将保存了纬度所有位数字字符的字符串转为浮点数
+                                    numcharacter="";
+                                } //while3
+                                MercatorPoints[i++]="END"+lineNumber[j++]; //当遇到E时，结束while3循环，用线段ID标记一条线的结束
+                                flag+=5; //一条线段读取结束之后跳到下一条线段的ID的第一位字符，
+                                character=str[flag]; //当是最后一条线时，即将'E'赋值给character，否则是将线段ID数字字符的第一位字符赋值给character
+                            } //else
+                        } //while1
+                    } //reader
+                } //function
+
+                function getGCSPoints(MercatorPoints) {
+                    //getMercatorPoints(fileJiangsu);
+                    //该语句解决从右到左点击功能按钮时画布1计算显示面积不能跑的BUG
+                    //经过断点调试发现调用此函数时，并没有重新提取字符到MercatorPoints数组中
+                    getMercatorPoints();
+                    if(GCSPoints.length==0) {
+                       var N=MercatorPoints.length;
+                       var x=new Array();
+                       var y=new Array();
+                       var B0=0; //标准纬度
+                       var L0=0; //原点经度
+                       var K=(a*a/b)/Math.sqrt(1+e02*Math.cos(B0)*Math.cos(B0))*Math.cos(B0);
+                       for(var l=0,j=0,m=0;l<N;l++) {
+                            if(MercatorPoints[l]!="END"+lineNumber[m]) {
+                                x[j]=(MercatorPoints[l]/K+L0)*180/Math.PI;
+                                GCSPoints.push(x[j]);
+                                var B=32*Math.PI/180;
+                                var t=0;
+                                var tempPoint=MercatorPoints[++l];
+                                while(1) {
+                                    t=Math.PI/2-2*Math.atan(Math.exp(-tempPoint/K)*Math.exp((e/2)*Math.log(1-e*Math.sin(B)/(1+e*Math.sin(B)))));
+                                    if(Math.abs(B-t)<0.00000001)
+                                        break;
+                                    else
+                                        B=t;
+                                }
+                                y[j]=B*180/Math.PI;
+                                GCSPoints.push(y[j]);
+                                j++;
+                            }
+                            else {
+                                GCSPoints.push("END"+lineNumber[m]);
+                                j=0;
+                                m++;
+                            }
+                        }
+                    }
+                }
+    
+                function draw(canvasId,points) {
+                    initCanvas(canvasId,getRandomColor(),1.5);
+                    var vary={
+                        scale:0,
+                        moveX:0,
+                        moveY:0
+                    };
+                    getVary(points,vary,canvasId);
+                    var N=points.length;
+                    var x=new Array();
+                    var y=new Array();
+                    for(var i=0,j=0,m=0;i<N;i++) {
+                        if(points[i]!="END"+lineNumber[m]) {
+                            x[j]=(points[i]+vary.moveX)*vary.scale;
+                            y[j]=canvasId.height-(points[++i]+vary.moveY)*vary.scale;
+                            j++;
+                        }
+                        else {
+                            cxt.beginPath();
+                            cxt.fillStyle=getRandomColor();
+                            cxt.moveTo(x[0],y[0]);
+                            for(var k=1;k<j;k++) {
+                                cxt.lineTo(x[k],y[k]);
+                            }
+                            cxt.stroke();
+                            cxt.fill();
+                            j=0;
+                            m++;
+                        }
+                    }
+                }
+
+                function getVary(POINTS,VARY,CANVAS) {
+                    var N=POINTS.length;
+                    var xMin=POINTS[0];
+                    var yMin=POINTS[1];
+                    var xMax=POINTS[0];
+                    var yMax=POINTS[1];
+                    for(var i=0,m=0;i<N;i++) {
+                        if(POINTS[i]!="END"+lineNumber[m]) {
+                            if(POINTS[i]<xMin) {
+                                xMin=POINTS[i];
+                            }
+                            if(POINTS[i]>xMax) {
+                                xMax=POINTS[i];
+                            }
+                            if(POINTS[++i]<yMin) {
+                                yMin=POINTS[i];
+                            }
+                            if(POINTS[i]>yMax) {
+                                yMax=POINTS[i];
+                            }
+                        } else {
+                            m++;
+                        }
+                    }
+
+                    var scaleX=CANVAS.width/(xMax - xMin);
+                    var scaleY=CANVAS.height/(yMax - yMin);
+                    if(scaleX<scaleY) {
+                        VARY.scale=scaleX;
+                        var dy=(yMax - yMin)*scaleX;
+                        var upY=(CANVAS.height-dy)/2/scaleX;
+                        VARY.moveX=-xMin;
+                        VARY.moveY=-yMin+upY;
+                    } else {
+                        VARY.scale=scaleY;
+                        var dx=(xMax - xMin)*scaleY;
+                        var upX=(CANVAS.width-dx)/2/scaleY;
+                        VARY.moveX=-xMin+upX;
+                        VARY.moveY=-yMin;
+                    }
+                }
+
+                function MercatorArea(points) {
+                    if(MercatorPointsArea.length==0) {
+                        var N=points.length;        
+                        for(var i=0,S=0,m=0;i<N;) {
+                            var tempS=(points[i]+points[i+2])*(points[i+3]-points[i+1])/2;
+                            S+=tempS;
+                            if(points[i+4]==="END"+lineNumber[m]) {
+                                if(GCSPointsArea.length<lineNumber.length) {
+                                    MercatorPointsArea[m]=[lineNumber[m],Math.abs(S)];
+                                }
+                                S=0;
+                                i+=5;
+                                m++;
+                            }
+                            else {
+                                i+=2;
+                            }
+                        }
+                    }
+                }
+
+                function GCSArea(points) {
+                    if(GCSPointsArea.length==0) {
+                        var N=points.length;
+                        var e1 = Math.sqrt(Math.pow(a / b, 2) - 1);
+                        var B0 = 30.75 / 180 * Math.PI; //江苏省最低纬度
+				        var AA = 1 + 1 / 2 * (e1 * e1) + 3 / 8 * (Math.pow(e1, 4)) + 5 / 16 * (Math.pow(e1, 6));
+				        var BB = 1 / 6 * (e1 * e1) + 3 / 16 * (Math.pow(e1, 4)) + 3 / 16 * (Math.pow(e1, 6));
+				        var CC = 3 / 80 * (Math.pow(e1, 4)) + 1 / 16 * (Math.pow(e1, 6));
+				        var DD = 1 / 112 * (Math.pow(e1, 6));
+
+                        for(var i=0,S=0,m=0;i<N;) {
+                            var B1 = points[i + 1] / 180 * Math.PI;
+					        var B2 = points[i + 3] / 180 * Math.PI;
+					        var B3 = (B1 + B2) / 2;
+					        var dB = B3 - B0;
+					        var aB = (B3 + B0) / 2;
+
+					        var L1 = points[i] / 180 * Math.PI;
+					        var L2 = points[i + 2] / 180 * Math.PI;
+					        var K = 2 * a * a * (1 - e1 * e1) * (L2 - L1);
+					        S += K * (AA * Math.sin(dB / 2) * Math.cos(aB) - BB * Math.sin(3 * dB / 2) * Math.cos(3 * aB) +
+						    CC * Math.sin(5 * dB / 2) * Math.cos(5 * aB) - DD * Math.sin(7 * dB / 2) * Math.cos(7 * aB));
+
+                            if(points[i+4]==="END"+lineNumber[m]) {
+                                if(GCSPointsArea.length<lineNumber.length) {
+                                    GCSPointsArea[m]=[lineNumber[m],Math.abs(S)];
+                                }
+                                i+=5;
+                                S=0;
+                                m++;
+                            }
+                            else {
+                                i+=2;
+                            }
+                        }
+                    }
+                }
+
+                function processAreaData(PointsArea,lastPointsArea) {
+                    var N=PointsArea.length;
+                    if(lastPointsArea.length==0) {
+                        for(var i=0;i<N-1;) {
+                            if(PointsArea[i][0]!=PointsArea[i+1][0]) {
+                                lastPointsArea.push(["城市"+PointsArea[i][0],parseInt(PointsArea[i][1])+"平方米"]);
+                                i++;
+                            }
+                            else {
+                                var S=0;
+                                var tempS=PointsArea[i][1]+PointsArea[i+1][1];
+                                S+=tempS;
+                                while(1) {
+                                    if((i+1)==N-1) {
+                                        lastPointsArea.push(["城市"+PointsArea[N-1][0],parseInt(S)+"平方米"]);
+                                        return 0;
+                                    }
+                                    i++;
+                                    if(PointsArea[i][0]!=PointsArea[i+1][0]) {
+                                        lastPointsArea.push(["城市"+PointsArea[i][0],parseInt(S)+"平方米"]);
+                                        i++;
+                                        break;
+                                    }
+                                    else {
+                                        S+=PointsArea[i+1][1];
+                                    }
+                                }
+                            }  
+                        }
+                        lastPointsArea.push(["城市"+PointsArea[N-1][0],parseInt(PointsArea[N-1][1])+"平方米"]);
+                    }
+                }
+
+                function showArea(areaName,tableId,lastPointsArea) {
+                    var N=lastPointsArea.length;
+                    var fCaption=document.createElement('caption');
+                    fCaption.textContent=areaName;
+                    tableId.appendChild(fCaption);
+                    for(var i=0;i<N;i++) {
+                        var fTr=document.createElement('tr');
+                        tableId.appendChild(fTr);
+                        for(var j=0;j<lastPointsArea[i].length;j++) {
+                            var fTd=document.createElement('td');
+                            fTd.textContent=lastPointsArea[i][j];
+                            fTr.appendChild(fTd);
+                        }
+                    }
+                }
+            </script>
+        </body>
+</html>

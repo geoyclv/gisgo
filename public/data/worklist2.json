@@ -1,0 +1,35 @@
+{
+    "dataName": "最佳工作序列测试数据",
+    "work": [
+        {
+            "workID": 1,
+            "costTime": 6,
+            "deadLine": 10,
+            "value": 2
+        },
+        {
+            "workID": 2,
+            "costTime": 5,
+            "deadLine": 12,
+            "value": 3
+        },
+        {
+            "workID": 3,
+            "costTime": 3,
+            "deadLine": 14,
+            "value": 8
+        },
+        {
+            "workID": 4,
+            "costTime": 5,
+            "deadLine": 6,
+            "value": 6
+        },
+        {
+            "workID": 5,
+            "costTime": 2,
+            "deadLine": 4,
+            "value": 4
+        }
+    ]
+}

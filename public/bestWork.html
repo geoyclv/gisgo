@@ -1,0 +1,240 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>最佳工作序列</title>
+        <style>
+            body {
+                width: 1000px;
+                margin: 0 auto;
+                position: relative;
+                border-left: 3px solid black;
+                border-right: 3px solid black;
+            }
+            header,footer {
+                background-color: #6991c7;
+                border-top: 3px solid black;
+                border-bottom: 3px solid black;
+            }
+            header {
+                height: 50px;
+            }
+            main {
+                position: relative;
+                background-color: #bac8e0;
+                min-height: 650px;
+            }
+            footer {
+                height: 40px;
+            }
+            h2,h3 {
+                line-height: 1;
+                padding: 10px;
+                margin: 0 auto;
+                font-family: '楷体';
+                text-align: center;
+            }
+            h2 {
+                font-size: 30px;
+            }
+            h3 {
+                font-size: 20px;
+            }
+            p {
+                padding: 16px;
+                margin: 0 auto;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 18px;
+            }
+            .navCont, #resultCont {
+                padding: 16px;
+                text-align: center;
+                margin: 0 auto;
+            }
+            .navCont h3, #resultCont h3 {
+                display: block;;
+                line-height: 1;
+                margin: 0 auto;
+                font-family: '仿宋';
+                font-weight: bold;
+                text-align: center;
+            }
+            .navCont input {
+                width: 50px;
+                height: 20px;
+                font-size: 18px;
+            }
+            .navCont button {
+                display: inline;
+                line-height: 1.5;
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 20px;
+                text-align: center;
+                border: 1px solid black;
+                margin: 0 auto;
+            }
+            .navCont button:hover {
+                color: white;
+                background-color: rgba(0,0,0,0.5);
+            }
+            table {
+                border-collapse: collapse;
+                border: 2px solid black;
+                margin: 0 auto;
+                padding: 0 16px 16px 16px;
+            }
+            td, th {
+                border: 1px solid gray;
+                padding: 10px 20px;
+            }
+            th {
+                background-color: rgb(235,235,235);
+            }
+            td {
+                text-align: center;
+            }
+            caption {
+                font-family: '仿宋';
+                font-weight: bold;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h2>最佳工作序列</h2>
+        </header>
+        <main>
+            <div class="navCont">
+                <h3>问题描述</h3>
+                <p>有N件工作，输入每件工作的费时、最后完成的期限及工作的价值，试求可能的一个完成工作序列，使价值和最大。</p>
+                <!--<button type="button" class="button" onclick="getData();">加载数据</button>-->
+                <button type="button" class="button" onclick="getData();">加载数据</button>
+                <button type="button" class="button" onclick="getResult()">计算显示</button>
+            </div>
+            <div id="resultCont">
+                <table id="table1"></table>
+            </div>
+        </main>
+        <footer>
+            <h3>10170312</h3>
+        </footer>
+        <script>
+            let addValue = new Array();
+            let bestWorkList = new Array(); //存储最终所有的合法工作序列
+            let fTable = document.getElementById("table1");
+            let workTemp = new Array();
+            let hasData = false; //标记是否读取并渲染测试数据
+            let hasResult = false; //
+            let work; //保存从json里面解析的工作对象，其中，每个工作对象有四个属性，分别为workID costTime deadLine value
+            function getData() {
+                if(hasData == true) {
+                    return -1;
+                }
+                let requestURL = './data/worklist.json';
+                let request = new XMLHttpRequest();
+                request.open('GET',requestURL);
+                request.responseType = 'json';
+                request.send();
+                request.onload = function(e) {
+                    let dataName = request.response['dataName'];
+                    work = request.response['work'];
+                    let fCaption = document.createElement('caption');
+                    fTable.appendChild(fCaption);
+                    fCaption.textContent = dataName;
+                    let fTr = document.createElement('tr');
+                    fTable.appendChild(fTr);
+                    for(let k in work[0]) { //以第一个工作对象的属性名为总的列名，横向渲染一次列名（工作对象属性名）到表格中 循环执行四次（对象1四个属性）
+                        let fTh = document.createElement('th');
+                        fTh.textContent = k;
+                        fTr.appendChild(fTh);
+                    }
+                    for(let i = 0; i < work.length; i++) {
+                        let fTr = document.createElement('tr'); //下四行的tr标签
+                        fTable.appendChild(fTr);
+                        for(let j in work[i]) {
+                            let fTd = document.createElement('td');
+                            fTd.textContent = work[i][j]; //i为行的索引，j对应属性的个数，故而这里能够访问到每个对象的属性值，如果循环条件换一种写法(如(let j = 0; j < 4; j++))则不能遍历访问到属性值，因为对象不是数组，但数组是对象。
+                            fTr.appendChild(fTd);
+                        }
+                    }
+                }
+                hasData = true;
+            }
+            //window.onload = getData();
+            //本程序默认输入数据合法，后续改进是在打印输入数据到表格时对数据合法性进行判断，合法性直接在表格里面表现，如不合法的数据标红等，最后将合法数据筛选出来传入本模块
+            //为了保证代码优雅，本计算模块只计算合法数据，不对不合法数据进行处理
+            //未来工作是，构造一个json文件，里面保存各种情况下测试数据的路径，下拉列表选择测试数据参与运算
+            function getResult() {
+                if(hasResult == true) {
+                    return -1;
+                }
+                for(let i = 0; i < work.length; i++) {
+                    for(let j = 0; j < work.length; j++) {
+                        work[j].bool = false;
+                    } //为所有工作对象增加一个布尔属性
+                    workTemp.splice(0,workTemp.length);
+                    work[i].bool = true;
+                    workTemp.push(JSON.parse(JSON.stringify(work[i])));
+                    bestWorkList.push(JSON.parse(JSON.stringify(workTemp))); //只进行一项工作一定合法，加入最终合法工作序列
+                    bestWork(workTemp);
+                }
+                showResult(bestWorkList);
+                hasResult = true;
+            }
+            //递归求所有合法序列
+            function bestWork(workTemp) {
+                for(let k = 0; k < work.length; k++) {
+                    if(work[k].bool == false) {
+                        workTemp.push(work[k]);
+                        if(workTemp[workTemp.length-1].deadLine >= getSumCostTime(workTemp)) {
+                            work[k].bool = true;
+                            bestWorkList.push(JSON.parse(JSON.stringify(workTemp)));
+                            bestWork(workTemp);
+                            work[k].bool = false; //改变上一步的标记，这一步很关键
+                            workTemp.pop();
+                        } else {
+                            workTemp.pop();
+                        }
+                    }
+                }
+            }
+            //求工作序列总的花费的时间
+            function getSumCostTime(workList) {
+                let sumTemp = 0;
+                for(let j = 0; j < workList.length; j++) {
+                    sumTemp += workList[j].costTime;
+                }
+                return sumTemp;
+            }
+            //打印合法工作序列
+            function showResult(bestWorkList) {
+                let tempValue = 0;
+                let str = ""; //
+                let allStr = "";
+                let maxValue = 0;
+                let fH3 = document.createElement('h3');
+                fH3.textContent = "合法工作序列"; 
+                resultCont.appendChild(fH3);
+                let fP = document.createElement('p');
+                resultCont.appendChild(fP);
+                for(let i = 0; i < bestWorkList.length; i++) {
+                    str = '合法工作序列' + (i + 1) + ' : ';
+                    for(let j = 0; j < bestWorkList[i].length; j++) {
+                        str += bestWorkList[i][j].workID + ' ';
+                        tempValue += bestWorkList[i][j].value;
+                    }
+                    str += "总价值：" + tempValue + '<br>';
+                    addValue.push(tempValue);
+                    allStr += str;
+                    tempValue = 0;
+                    str = "";
+                }
+                fP.innerHTML = allStr;
+            }
+            //求取合法工作序列中价值最大的
+        </script>
+    </body>
+</html>
