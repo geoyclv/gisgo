@@ -139,8 +139,8 @@
                 request.responseType = 'json';
                 request.send();
                 request.onload = function(e) {
-                    let dataName = request.response['dataName'];
-                    work = request.response['work'];
+                    let dataName = JSON.parse(request.response).dataName;
+                    work = JSON.parse(request.response).work;
                     let fCaption = document.createElement('caption');
                     fTable.appendChild(fCaption);
                     fCaption.textContent = dataName;
